@@ -8,7 +8,7 @@
 
 <body>
     <div id="SpotifyImportConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
-         data-require="emby-input,emby-button,emby-select,emby-checkbox"
+         data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-textarea"
          data-controller="__plugin/playlistconfigjs">
         <style>
             .playlistContainer, .usersContainer, .multiCheckboxContainer {
@@ -67,7 +67,7 @@
                     </div>
 
                     <div class="inputContainer">
-                        <textarea id="SpotifyOAuthTokenJson" is="emby-input" label="Spotify Auth Token (JSON)"></textarea>
+                        <textarea id="SpotifyOAuthTokenJson" is="emby-textarea" label="Spotify Auth Token (JSON)" class="emby-input"></textarea>
                         <div class="fieldDescription">
                             Enter the JSON representation of a Spotify OAuth Access Token.
                             The CreatedAt field is optional and will be automatically set to a past date if omitted.
