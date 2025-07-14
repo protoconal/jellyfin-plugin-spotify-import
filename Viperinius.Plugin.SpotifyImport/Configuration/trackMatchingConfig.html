@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Spotify Import - Track Matching</title>
+    <style>
+        .track-matching-container {
+            display: flex;
+            height: 80vh;
+            gap: 1rem;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .left-panel {
+            background-color: #f9f9f9;
+        }
+
+        .right-panel {
+            background-color: #ffffff;
+        }
+
+        .track-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .track-item:hover {
+            background-color: #e9e9e9;
+        }
+
+        .track-item.selected {
+            background-color: #007acc;
+            color: white;
+        }
+
+        .track-item.selected:hover {
+            background-color: #005a9e;
+        }
+
+        .match-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .match-item.perfect-match {
+            border-color: #4CAF50;
+            background-color: #f1f8e9;
+        }
+
+        .match-item.partial-match {
+            border-color: #FF9800;
+            background-color: #fff3e0;
+        }
+
+        .match-item.poor-match {
+            border-color: #F44336;
+            background-color: #ffebee;
+        }
+
+        .track-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 0.25rem;
+        }
+
+        .track-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .differences {
+            margin-top: 0.5rem;
+        }
+
+        .difference {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.85em;
+        }
+
+        .difference .field {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .difference .provider-value {
+            color: #d32f2f;
+        }
+
+        .difference .jellyfin-value {
+            color: #1976d2;
+        }
+
+        .match-actions {
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .match-actions button {
+            margin-left: 0.5rem;
+        }
+
+        .tab-container {
+            margin-bottom: 1rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .tab-button.active {
+            border-bottom-color: #007acc;
+            color: #007acc;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-container {
+            margin-bottom: 1rem;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .bulk-actions {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .bulk-actions button {
+            margin-right: 0.5rem;
+        }
+
+        .match-confidence {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .confidence-high {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .confidence-medium {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .confidence-low {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .verified-match {
+            border-left: 4px solid #4CAF50;
+            background-color: #f1f8e9;
+        }
+
+        .manual-match {
+            border-left: 4px solid #2196F3;
+            background-color: #e3f2fd;
+        }
+
+        .status-icon {
+            margin-right: 0.5rem;
+        }
+
+        .status-verified::before {
+            content: "✓";
+            color: #4CAF50;
+        }
+
+        .status-manual::before {
+            content: "✋";
+            color: #2196F3;
+        }
+
+        .status-auto::before {
+            content: "🤖";
+            color: #FF9800;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="SpotifyImportTrackMatchingPage"
+         data-role="page"
+         class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-select"
+         data-controller="__plugin/trackmatchingjs">
+        
+        <div class="content-primary">
+            <div class="sectionTitleContainer flex align-items-center">
+                <h2 class="sectionTitle">Spotify Import - Track Matching</h2>
+            </div>
+            
+            <div class="verticalSection">
+                <p>Review and manage Spotify track matches to Jellyfin tracks. Select a Spotify track on the left to view potential matches on the right.</p>
+            </div>
+
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="one-to-many">One-to-Many Matches</button>
+                    <button class="tab-button" data-tab="one-to-one">One-to-One Verification</button>
+                </div>
+
+                <!-- One-to-Many Tab -->
+                <div class="tab-content active" id="one-to-many-tab">
+                    <div class="bulk-actions">
+                        <button is="emby-button" type="button" id="acceptSelectedMatches" class="raised" disabled>
+                            Accept Selected Matches
+                        </button>
+                        <button is="emby-button" type="button" id="rejectSelectedMatches" class="raised" disabled>
+                            Reject Selected Matches
+                        </button>
+                        <button is="emby-button" type="button" id="refreshUnmatched" class="raised">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="track-matching-container">
+                        <div class="left-panel">
+                            <div class="search-container">
+                                <input type="text" id="spotifySearchInput" placeholder="Search Spotify tracks..." />
+                            </div>
+                            <div id="spotifyTracksList">
+                                <div class="loading">Loading Spotify tracks...</div>
+                            </div>
+                            <div class="pagination" id="spotifyPagination">
+                                <button id="prevSpotifyPage" disabled>Previous</button>
+                                <span id="spotifyPageInfo">Page 1 of 1</span>
+                                <button id="nextSpotifyPage" disabled>Next</button>
+                            </div>
+                        </div>
+
+                        <div class="right-panel">
+                            <div class="search-container">
+                                <input type="text" id="jellyfinSearchInput" placeholder="Search Jellyfin tracks..." />
+                            </div>
+                            <div id="jellyfinMatchesList">
+                                <div class="empty-state">Select a Spotify track to view potential matches</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- One-to-One Tab -->
+                <div class="tab-content" id="one-to-one-tab">
+                    <div class="bulk-actions">
+                        <button is="emby-button" type="button" id="verifySelectedMatches" class="raised" disabled>
+                            Verify Selected Matches
+                        </button>
+                        <button is="emby-button" type="button" id="removeSelectedMatches" class="raised" disabled>
+                            Remove Selected Matches
+                        </button>
+                        <button is="emby-button" type="button" id="refreshMatched" class="raised">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="track-matching-container">
+                        <div class="left-panel">
+                            <div class="search-container">
+                                <input type="text" id="matchedSearchInput" placeholder="Search matched tracks..." />
+                            </div>
+                            <div id="matchedTracksList">
+                                <div class="loading">Loading matched tracks...</div>
+                            </div>
+                            <div class="pagination" id="matchedPagination">
+                                <button id="prevMatchedPage" disabled>Previous</button>
+                                <span id="matchedPageInfo">Page 1 of 1</span>
+                                <button id="nextMatchedPage" disabled>Next</button>
+                            </div>
+                        </div>
+
+                        <div class="right-panel">
+                            <div id="matchVerificationPanel">
+                                <div class="empty-state">Select a matched track to verify the match</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
